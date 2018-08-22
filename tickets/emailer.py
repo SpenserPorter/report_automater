@@ -3,11 +3,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from O365 import Message
 
-class O365Auth:
-
-    def __init__(self, from_account, password):
-        self.auth = (from_account, password)
-
 class O365Email:
 
     def __init__(self, email_auth, to_account, subject, body):
