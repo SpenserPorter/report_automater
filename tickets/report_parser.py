@@ -60,7 +60,7 @@ for df, report_name in reports_to_process:
 def construct_email_body(agent_dict):
     '''Builds email body with a list of tickets under each
     report header'''
-    output = []
+    output = ["Tickets with a * have multiple issues <br>"]
     agent_ticket_list = []
     for report_name, list_of_tickets in agent_dict.items():
         for i in range(len(list_of_tickets)):
