@@ -10,7 +10,16 @@ df_initial = pd.read_csv('Helpdesk_ActionDetail.csv')
 
 class Report:
 
-    d
+    def __init__(self, dataframe, name):
+        self.df = dataframe
+        seslf.name = name
+
+class Agent:
+
+    def __init__(self, name):
+        self.name = name
+
+    def
 
 #Exclude cancelled tickets
 def remove_cancelled_tickets_from_df(df):
@@ -24,18 +33,14 @@ def get_date_range_for_df(df):
 def get_request_source_errors(df):
     return request_source_correction = df.loc[(~df['Request_Source'].isin(['Phone','E-mail'])) &
                                               (df['Model'] != 'STS PROCESS-FM')]
-
-def get
-
-
-
 #Get actions with missing severity
-missing_severity = df.loc[df['Task_Severity'].isnull()]
-reports_to_process.append((missing_severity, "Severity missing"))
+def get_actions_with_missing_severity(df):
+    return df.loc[df['Task_Severity'].isnull()]
 
 #Get actions with missing closeout notes
-missing_closeout = df.loc[df['Close_Notes'].isnull()]
-reports_to_process.append((missing_closeout, "Closeout notes missing"))
+def get_actions_with_missing_closeout(df):
+    return df.loc[df['Close_Notes'].isnull()]
+
 
 #Get actions which have been open for more than max_age_days
 date_format = r'%m/%d/%Y %I:%M %p'
