@@ -22,7 +22,8 @@ date_range = "{} to {}".format(df.loc[0]['Request_Dttm'], df.iloc[-1]['Request_D
 
 #Get actions with Request Source set to manual that are not STS processes
 request_source_correction = df.loc[(~df['Request_Source'].isin(['Phone','E-mail'])) &
-                                   (df['Model'] != 'STS PROCESS-FM')]
+                                   (df['Model'] != 'STS Process')]
+
 reports_to_process.append((request_source_correction, "Request source incorrect"))
 
 #Get actions with missing severity
