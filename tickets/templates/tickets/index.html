@@ -1,32 +1,5 @@
-<html>
-        <header>
-            <h2>Upload Helpdesk_ActionDeal.csv</h2>
-        </header>
-    <body>
-
-{% load static %}
+{% extends "tickets/base.html" %}
 
 {% block content %}
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    <input type="file" name="myfile">
-    <button type="submit">Upload</button>
-  </form>
-
-  {% if uploaded_file_url %}
-    <p>File uploaded at: <a href="{{ uploaded_file_url }}">{{ uploaded_file_url }}</a></p>
-  {% endif %}
-
-  {% if file_upload_error_message %}
-    <p>{{ file_upload_error_message }} </p>
-  {% endif %}
-  {% autoescape off %}
-  {% if agent_report %}
-    {{agent_report}}
-  {% endif %}
-  {% endautoescape %}
-
-{% endblock %}
-
-    </body>
-</html>
+This is the index
+{% endblock content %}

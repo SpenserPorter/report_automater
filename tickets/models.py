@@ -6,4 +6,4 @@ class Agent(models.Model):
     agent_squire_id = models.CharField(max_length=200)
 
 class Document(models.Model):
-    docfile = models.FileField(upload_to='documents/')
+    docfile = models.FileField(upload_to='media/')

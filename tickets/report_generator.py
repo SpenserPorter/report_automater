@@ -27,7 +27,8 @@ def validate_csv_file(csv_file_path):
         df = pd.read_csv(csv_file_path)
         test = df[['Request_ID', 'Request_Status', 'Request_Created_By', 'Request_Dttm', 'Request_Source',
                 'Task_Severity','Close_Notes']]
-        return {'success': True, 'dataframe': df}
+        if df.shape == df.loc[df['Request_Type'] == 'Help Desk'].shape:
+            return {'success': True, 'dataframe': df}
     except IOError as error_message:
         return {'success': False, 'error_text': 'Unable to open file at location {}'.format(csv_file_path),
                 'error': error_message
