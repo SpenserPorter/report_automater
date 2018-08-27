@@ -1,8 +1,10 @@
-import emailer
-import report_parser
+from tickets import emailer
+from tickets import report_parser as rp
 import yaml
 import os
+import pandas as pd
 
+#Set config file path
 file_path = os.path.dirname(__file__)
 config_file_rel_path = "config/config.yaml"
 abs_config_path = os.path.join(file_path, config_file_rel_path)
@@ -16,7 +18,49 @@ with open(abs_config_path, 'r') as ymlfile:
     send_email = cfg['send_email']
 
 from_account = os.getenv('REPORT_EMAIL_USERNAME')
-password = oos.getenv('REPORT_EMAIL_PASSWORD')
+password = os.getenv('REPORT_EMAIL_PASSWORD')
+
+def validate_csv_file(csv_file_path):
+    """Validates file is csv, and has the expected columns for Helpdesk_ActionDetail.csv report,
+    returns the dataframe if valid, or the error message if not valid"""
+    try:
+        df = pd.read_csv(csv_file_path)
+        test = df[['Request_ID', 'Request_Status', 'Request_Created_By', 'Request_Dttm', 'Request_Source',
+                'Task_Severity','Close_Notes']]
+        return {'success': True, 'dataframe': df}
+    except IOError as error_message:
+        return {'success': False, 'error_text': 'Unable to open file at location {}'.format(csv_file_path),
+                'error': error_message
+                }
+    except KeyError as error_message:
+        return {'success': False, 'error_text': "The report submitted doesn't appear to be a Helpdesk_ActionDetail report,\
+                please upload the correct report", 'error': error_message
+                }
+
+def get_report_dict(dataframe):
+    return rp.split_df_into_reports(dataframe, max_age_days)
+
+def build_ticket_dict(report_dict):
+    ticket_dict = {}
+    for report in report_dict['report_list']:
+        add_report_to_dict(report, ticket_dict)
+    return ticket_dict
+
+def add_report_to_dict(report, ticket_dict):
+    '''Create dictionary of {Agent_name:{Report:[Ticket_list]}}'''
+    df = report.df
+    report_name = report.name
+    for index, row in df.iterrows():
+        agent = row['Request_Created_By']
+        if agent not in ticket_dict:
+            ticket_dict[agent] = {report_name: [row['Request_ID']]}
+        else:
+            if report_name not in ticket_dict[agent]:
+                ticket_dict[agent][report_name] = [row['Request_ID']]
+            else:
+                if row['Request_ID'] not in ticket_dict[agent][report_name]:
+                    ticket_dict[agent][report_name].append(row['Request_ID'])
+    return ticket_dict
 
 def construct_email_body(agent_dict):
     '''Builds email body with a list of tickets under each
@@ -34,13 +78,6 @@ def construct_email_body(agent_dict):
     disclaimer = 'This report was auto-generated, please reply with any errors and include the ticket number. <br><br>'
     output.append(disclaimer)
     return '<br>'.join(output), len(agent_ticket_list)
-
-def construct_email_address_from_name(name_string):
-    '''Builds email address from First Last string using standard email format of
-    first initial + last name @email_domain.com'''
-    first, last = name_string.replace("'", "").split(" ")
-    email_list = [first[0], last, email_domain]
-    return "".join(email_list)
 
 def email_agents_results(full_dict):
     '''Emails agents a report of their malformed tickets'''
@@ -66,7 +103,7 @@ def email_totals_report(full_dict):
     if send_email:
         email.send()
     else:
-        email.send()
+        return email_body
 
 def agent_totals(dict):
     '''Generates total malformed ticket reports'''

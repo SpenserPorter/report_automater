@@ -1,8 +1,7 @@
-from django.urls import path
-
+from django.urls import include, path
+from django.conf.urls.static import static
 from . import views
 
 urlpatterns = [
-    path('tickets/', include('tickets.urls')),
-    path('admin/', admin.site.tickets),
+    path('', views.index, name='index'),
 ]
