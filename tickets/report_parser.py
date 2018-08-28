@@ -10,21 +10,6 @@ class ReportDataframe:
         self.df = dataframe
         self.name = name
 
-class Agent:
-
-    def __init__(self, name_string):
-        self.name = name_string
-
-    def __repr__(self):
-        return self.name
-
-    def get_email_address(self):
-        '''Builds email address from First Last string using standard email
-         format of first initial + last name @email_domain.com'''
-        first, last = self.name.replace("'", "").split(" ")
-        email_list = [first[0], last, email_domain]
-        return "".join(email_list)
-
 def split_df_into_reports(df_initial, max_age_days):
     """Takes raw datafrome and splits into Report objects"""
 

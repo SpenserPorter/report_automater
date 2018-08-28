@@ -3,6 +3,7 @@ from tickets import report_parser as rp
 import yaml
 import os
 import pandas as pd
+from .models import Agent
 
 #Set config file path
 file_path = os.path.dirname(__file__)
@@ -47,20 +48,32 @@ def build_ticket_dict(report_dict):
         add_report_to_dict(report, ticket_dict)
     return ticket_dict
 
+def build_agent_model(agent_name):
+    email = get_email_address(agent_name)
+    return Agent.create(agent_name, email)
+
+def get_email_address(agent_name):
+    '''Builds email address from First Last string using standard email
+     format of first initial + last name @email_domain.com'''
+    first, last = agent_name.split(' ')
+    email_components = [first[0], last, email_domain]
+    return "".join(email_components)
+
 def add_report_to_dict(report, ticket_dict):
     '''Create dictionary of {Agent_name:{Report:[Ticket_list]}}'''
     df = report.df
     report_name = report.name
     for index, row in df.iterrows():
-        agent = row['Request_Created_By']
-        if agent not in ticket_dict:
-            ticket_dict[agent] = {report_name: [row['Request_ID']]}
+        agent = build_agent_model(row['Request_Created_By'])
+        agent.save()
+        if agent.name not in ticket_dict:
+            ticket_dict[agent.name] = {report_name: [row['Request_ID']]}
         else:
-            if report_name not in ticket_dict[agent]:
-                ticket_dict[agent][report_name] = [row['Request_ID']]
+            if report_name not in ticket_dict[agent.name]:
+                ticket_dict[agent.name][report_name] = [row['Request_ID']]
             else:
-                if row['Request_ID'] not in ticket_dict[agent][report_name]:
-                    ticket_dict[agent][report_name].append(row['Request_ID'])
+                if row['Request_ID'] not in ticket_dict[agent.name][report_name]:
+                    ticket_dict[agent.name][report_name].append(row['Request_ID'])
     return ticket_dict
 
 def construct_email_body(agent_dict):

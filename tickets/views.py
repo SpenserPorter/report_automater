@@ -30,10 +30,14 @@ def process(request, file_uuid):
             report_dict = rg.get_report_dict(validation_results['dataframe'])
             ticket_dict = rg.build_ticket_dict(report_dict)
             agent_totals = rg.agent_totals(ticket_dict)
+            context = {}
             if view_results:
-                return render(request, 'tickets/process.html', {
-                    'agent_report': agent_totals[0]
-                })
+                context['agent_report'] = agent_totals[0]
+            if email_results:
+                #send email with rg
+                context['email_results'] = 'Emails sent'
+
+            return render(request, 'tickets/process.html', context)
         else:
             return render(request, 'tickets/upload.html', {
                 'file_upload_error_message': validation_results['error_text']
