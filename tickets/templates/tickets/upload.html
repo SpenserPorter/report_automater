@@ -2,7 +2,7 @@
 {% load static %}
     {% block content %}
     <head>
-        <h3>Upload "Helpdesk_ActionDetail.csv" file to begin</h3>
+        <h3>Step 1: Upload "Helpdesk_ActionDetail.csv" file to begin</h3>
     </head>
     <body>
       <form method="post" enctype="multipart/form-data">
@@ -11,8 +11,9 @@
         <button type="submit">Upload</button>
       </form>
       {% if uploaded_file_uuid %}
-        <p>File uploaded succesfully! {{ uploaded_file_uuid }}</a></p>
-        <form action="{% url 'process' uploaded_file_uuid %}" method="post">
+        <p><a>File uploaded succesfully! {{ uploaded_file_uuid }}</a></p>
+        <p>Press "Process Reports" to add data to the databse </p>
+        <form action="{% url 'process_view' uploaded_file_uuid %}" method="post">
             {% csrf_token %}
               {{ form }}
             <input type='submit' value='Process Reports'>

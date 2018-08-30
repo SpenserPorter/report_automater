@@ -12,8 +12,10 @@
             {% block sidebar %}
             <ul class="sidebar-nav" id='nav'>
                 <li>{% block nav-home %}<a href="{% url 'index' %}">Home</a>{% endblock %}</li>
-                <li>{% block nav-upload %}<a href="{% url 'upload' %}">Malformed Tickets</a>{% endblock %}</li>
+                <li>{% block nav-upload %}<a href="{% url 'upload' %}">Upload new report</a>{% endblock %}</li>
+                <li>{% block nav-view_reports %}<a href="{% url 'view' %}">View Overall Stats</a> {% endblock %}
                 <li>{% block nav-about %}<a href="{% url 'about' %}">About</a>{% endblock %}</li>
+                <li>{% block nav-admin %}<a href="{% url 'admin:index' %}">Admin</a>{% endblock %}</li>
             </ul>
             {% endblock %}
             </div>

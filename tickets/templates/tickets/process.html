@@ -1,9 +1,0 @@
-{% extends "tickets/base.html" %}
-
-{% block content %}
-    {% autoescape off %}
-        {% if agent_report %}
-          {{agent_report}}
-        {% endif %}
-    {% endautoescape %}
-{% endblock content %}

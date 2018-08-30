@@ -1,9 +1,12 @@
 from tickets import emailer
 from tickets import report_parser as rp
+import datetime as dt
 import yaml
 import os
 import pandas as pd
-from .models import Agent
+from .models import Agent, Ticket
+from django.db import transaction
+import pytz
 
 #Set config file path
 file_path = os.path.dirname(__file__)
@@ -18,8 +21,10 @@ with open(abs_config_path, 'r') as ymlfile:
     lead_list = cfg['lead_list']
     send_email = cfg['send_email']
 
+timezone = pytz.timezone('US/Eastern')
 from_account = os.getenv('REPORT_EMAIL_USERNAME')
 password = os.getenv('REPORT_EMAIL_PASSWORD')
+dttm_format = r'%m/%d/%Y %I:%M %p'
 
 def validate_csv_file(csv_file_path):
     """Validates file is csv, and has the expected columns for Helpdesk_ActionDetail.csv report,
@@ -35,18 +40,15 @@ def validate_csv_file(csv_file_path):
                 'error': error_message
                 }
     except KeyError as error_message:
-        return {'success': False, 'error_text': "The report submitted doesn't appear to be a Helpdesk_ActionDetail report,\
-                please upload the correct report", 'error': error_message
-                }
+        return {
+        'success': False,
+        'error_text': "The report submitted doesn't appear to be a Helpdesk_ActionDetail report,\
+                        please upload the correct report",
+        'error': error_message
+        }
 
 def get_report_dict(dataframe):
     return rp.split_df_into_reports(dataframe, max_age_days)
-
-def build_ticket_dict(report_dict):
-    ticket_dict = {}
-    for report in report_dict['report_list']:
-        add_report_to_dict(report, ticket_dict)
-    return ticket_dict
 
 def build_agent_model(agent_name):
     email = get_email_address(agent_name)
@@ -59,24 +61,50 @@ def get_email_address(agent_name):
     email_components = [first[0], last, email_domain]
     return "".join(email_components)
 
-def add_report_to_dict(report, ticket_dict):
-    '''Create dictionary of {Agent_name:{Report:[Ticket_list]}}'''
+def add_reports_dict_to_db(report_dict):
+    ticket_dict = {}
+    for report in report_dict['report_list']:
+        dttm_updated = report_dict['end_dttm']
+        add_report_to_db(report, ticket_dict, dttm_updated)
+
+def set_ticket_report_status(ticket, report_name):
+    if report_name == 'All tickets':
+        return
+    elif report_name == 'Request source incorrect':
+        ticket.is_incorrect_request_source = True
+    elif report_name == 'Severity missing':
+        ticket.is_missing_severity = True
+    elif report_name == 'Missing closeout':
+        ticket.is_missing_closeout = True
+    elif report_name == 'Open tickets':
+        ticket.is_open = True
+
+@transaction.atomic
+def add_report_to_db(report, ticket_dict, report_pulled_dttm):
+    '''Add tickets to DB based on owner and report they show up in'''
     df = report.df
     report_name = report.name
     for index, row in df.iterrows():
-        agent = build_agent_model(row['Request_Created_By'])
-        agent.save()
-        if agent.name not in ticket_dict:
-            ticket_dict[agent.name] = {report_name: [row['Request_ID']]}
-        else:
-            if report_name not in ticket_dict[agent.name]:
-                ticket_dict[agent.name][report_name] = [row['Request_ID']]
-            else:
-                if row['Request_ID'] not in ticket_dict[agent.name][report_name]:
-                    ticket_dict[agent.name][report_name].append(row['Request_ID'])
-    return ticket_dict
+        agent_name = row['Request_Created_By']
+        ticket_id = row['Request_ID']
+        ticket_created_dttm = timezone.localize(dt.datetime.strptime(row['Request_Dttm'], dttm_format))
 
-def construct_email_body(agent_dict):
+        if Agent.objects.filter(name=agent_name).exists():
+            agent = Agent.objects.filter(name=agent_name).get()
+        else:
+            agent = build_agent_model(agent_name)
+            agent.save()
+        if Ticket.objects.filter(id=ticket_id).exists():
+            ticket = Ticket.objects.filter(id=ticket_id).get()
+            if ticket.dttm_updated < report_pulled_dttm:
+                ticket.clear_all_status()
+                ticket.last_updated = report_pulled_dttm
+        else:
+            ticket = Ticket.create(ticket_id, agent, ticket_created_dttm, report_pulled_dttm)
+        set_ticket_report_status(ticket, report_name)
+        ticket.save()
+
+def construct_email_body():
     '''Builds email body with a list of tickets under each
     report header'''
     output = []
