@@ -3,16 +3,21 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.template import loader
 from django.http import HttpResponse
+from django.db.models import Count, Q
 from . import report_generator as rg
-from .forms import ReportOptions
+from .forms import ReportOptions, EmailerOptions
 from .models import Agent, Ticket
-import datetime as dt
+from . import emailer as Emailer
 from math import floor
+import os
 import uuid
-from django.db.models import Q
 import pytz
+import datetime as dt
 
+from_account = os.getenv('REPORT_EMAIL_USERNAME')
+password = os.getenv('REPORT_EMAIL_PASSWORD')
 timezone = pytz.timezone('US/Eastern')
+send_email = False
 
 def index(request):
     template = loader.get_template('tickets/index.html')
@@ -26,21 +31,20 @@ def about(request):
 
 def get_all_tickets_with_errors(agents_tickets):
     result = agents_tickets.filter(
-                    Q(is_missing_closeout=True)|
+                    Q(is_missing_closeout=True) |
                     Q(is_incorrect_request_source=True) |
                     Q(is_missing_severity=True)
                     )
     return result
 
-
 def build_agent_report(days):
-    agents = Agent.objects.all()
+    agents = Agent.objects.annotate(ticket_count=Count('tickets')).filter(ticket_count__gt=0).all()
     totals_list = []
     for agent in agents:
         dttm_now = timezone.localize(dt.datetime.now())
         agents_tickets = agent.tickets.filter(
-            dttm_created__gt=(dttm_now - dt.timedelta(days=days))
-            ).all()
+                        dttm_created__gt=(dttm_now - dt.timedelta(days=days))
+                        ).all()
         total_tickets = agents_tickets.count()
         total_open_tickets = agents_tickets.filter(is_open=True).count()
         total_missing_sev = agents_tickets.filter(is_missing_severity=True).count()
@@ -96,14 +100,42 @@ def view(request, file_uuid=None, pk=None):
                 context['start_dttm'] = report_dict['start_dttm']
                 context['end_dttm'] = report_dict['end_dttm']
             if email_results:
-                #send email with rg
-                context['email_results'] = 'Emails sent'
+                pass
 
             return render(request, 'tickets/view.html', context)
         else:
             return render(request, 'tickets/upload.html', {
                 'file_upload_error_message': validation_results['error_text']
             })
+
+def email_totals_report():
+    '''Emails leads a report of total malformed tickets by category and agent'''
+    auth = (from_account, password)
+    to_address = list(Agent.objects.filter(is_lead=True).all()) if send_email else 'Sporter@spencertech.com'
+    context = get_report_data_context(30) #TODO Change days to form param
+    email_body = loader.render_to_string('tickets/view.html', context)
+    email_subject = "Ticket error report"
+    email = Emailer.O365Email(auth, "spenser.porter@gmail.com", email_subject, email_body)
+    if send_email:
+        email.send()
+    else:
+        email.send()
+
+def emailer(request):
+    if request.method == 'GET':
+        form = EmailerOptions()
+        context = {
+            'form': form
+        }
+        return render(request, 'tickets/emailer.html', context)
+    if request.method == 'POST':
+        form = EmailerOptions(request.POST)
+        if form.is_valid():
+            email_agents = form.cleaned_data['email_agents']
+            email_leads = form.cleaned_data['email_leads']
+        if email_leads:
+            body = email_totals_report()
+
 
 def get_filename_from_uuid(uuid):
     return "{}/{}.csv".format(settings.MEDIA_ROOT, uuid)

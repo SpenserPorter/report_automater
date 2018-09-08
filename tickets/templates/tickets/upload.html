@@ -12,7 +12,7 @@
       </form>
       {% if uploaded_file_uuid %}
         <p><a>File uploaded succesfully! {{ uploaded_file_uuid }}</a></p>
-        <p>Press "Process Reports" to add data to the databse </p>
+        <p>Click "Process Reports" to add/update ticket data</p>
         <form action="{% url 'process_view' uploaded_file_uuid %}" method="post">
             {% csrf_token %}
               {{ form }}

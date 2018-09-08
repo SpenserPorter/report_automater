@@ -3,6 +3,7 @@ from django.db import models
 class Agent(models.Model):
     name = models.CharField(max_length=64, unique=True)
     email = models.CharField(max_length=64, unique=True)
+    is_lead = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -19,6 +20,8 @@ class Ticket(models.Model):
     is_missing_severity = models.BooleanField(default=False)
     is_missing_closeout = models.BooleanField(default=False)
     is_incorrect_request_source = models.BooleanField(default=False)
+    is_negative_response_time = models.BooleanField(default=False)
+    is_large_response_time = models.BooleanField(default=False)
     is_open = models.BooleanField(default=False)
 
     def __str__(self):
@@ -29,6 +32,8 @@ class Ticket(models.Model):
         self.is_missing_closeout = False
         self.is_incorrect_reqeust_source = False
         self.is_open = False
+        self.is_negative_response_time = False
+        self.is_large_response_time = False
 
     @classmethod
     def create(cls, id, owner, dttm_created, dttm_updated):
