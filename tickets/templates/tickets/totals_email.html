@@ -1,0 +1,70 @@
+{% autoescape off %}
+    {% if totals_list %}
+        {% if start_dttm %}
+    <h4> Ticket Error Breakdown for {{start_dttm}} - {{end_dttm}} </h4>
+        {% endif %}
+    <table style="border-collapse:collapse;" width="100%" align="center" border="1" cellspacing="0">
+        {% if start_dttm %}
+        <caption>Ticket Error Breakdown, all tickets since September 1st</caption>
+        {% endif %}
+        <thead>
+            <tr>
+                <th scope="col">
+                    Agent Name
+                </th>
+                <th scope="col">
+                    Open
+                </th>
+                <th scope="col">
+                    Missing<br>Severity
+                </th>
+                <th scope="col">
+                    Incorrect<br>Req. Source
+                </th>
+                <th scope="col">
+                    Missing<br>Closeouts
+                </th>
+                <th scope="col">
+                    Total Tickets<br>with Errors
+                </th>
+                <th scope="col">
+                    Total Tickets
+                </th>
+                <th scope="col">
+                    Error %
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for agent_values in totals_list %}
+            <tr>
+                <th scope="row">
+                    {{agent_values.agent.name}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_open_tickets}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_missing_sev}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_incorrect_request_source}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_missing_closeout}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_with_errors}}
+                </td>
+                <td align="center">
+                    {{agent_values.total_tickets}}
+                </td>
+                <td align="center">
+                    {{agent_values.error_percent}}%
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+{% endautoescape %}

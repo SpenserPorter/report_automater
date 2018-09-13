@@ -17,7 +17,7 @@ import datetime as dt
 from_account = os.getenv('REPORT_EMAIL_USERNAME')
 password = os.getenv('REPORT_EMAIL_PASSWORD')
 timezone = pytz.timezone('US/Eastern')
-send_email = False
+send_email = True
 
 def index(request):
     template = loader.get_template('tickets/index.html')
@@ -37,14 +37,21 @@ def get_all_tickets_with_errors(agents_tickets):
                     )
     return result
 
-def build_agent_report(days):
-    agents = Agent.objects.annotate(ticket_count=Count('tickets')).filter(ticket_count__gt=0).all()
+def get_agents_with_nonzero_tickets():
+    return Agent.objects.annotate(ticket_count=Count('tickets')).filter(ticket_count__gt=0).all()
+
+def build_agent_report(days=None):
+    agents = get_agents_with_nonzero_tickets()
     totals_list = []
     for agent in agents:
         dttm_now = timezone.localize(dt.datetime.now())
-        agents_tickets = agent.tickets.filter(
-                        dttm_created__gt=(dttm_now - dt.timedelta(days=days))
-                        ).all()
+        if days is not None:
+            agents_tickets = agent.tickets.filter(
+                                dttm_created__gt=(dttm_now - dt.timedelta(days=days))
+                                ).all()
+        else:
+            agents_tickets = agent.tickets.all()
+
         total_tickets = agents_tickets.count()
         total_open_tickets = agents_tickets.filter(is_open=True).count()
         total_missing_sev = agents_tickets.filter(is_missing_severity=True).count()
@@ -61,7 +68,32 @@ def build_agent_report(days):
         sorted_totals = sorted(totals_list, key=lambda totals: totals['total_tickets'], reverse=True)
     return sorted_totals
 
-def get_report_data_context(days):
+def email_agents_reports():
+    '''Emails agents a report of their malformed tickets'''
+    auth = (from_account, password)
+    agents = get_agents_with_nonzero_tickets()
+    for agent in agents:
+        tickets = get_all_tickets_with_errors(agent.tickets.all())
+        total_tickets_with_errors = tickets.count()
+        if total_tickets_with_errors > 0:
+            context = {
+                'agent': agent,
+                'tickets': tickets,
+                }
+            email_body = loader.render_to_string('tickets/agent_emails.html', context)
+            email_subject = '{} tickets require action'.format(total_tickets_with_errors)
+        else:
+            email_body = "Good job!"
+            email_subject = "All your tickets are correct"
+        to_address = agent.email
+        email = Emailer.O365Email(auth, to_address, email_subject, email_body)
+        if send_email:
+            email.send()
+        else:
+            if agent.name == 'Spenser Porter':
+                email.send()
+
+def get_report_data_context(days=None):
     totals_list = build_agent_report(days)
     context = {
         'totals_list': totals_list
@@ -95,7 +127,7 @@ def view(request, file_uuid=None, pk=None):
             rg.add_reports_dict_to_db(report_dict)
             context = {}
             if view_results:
-                totals_list = build_agent_report(days=30)
+                totals_list = build_agent_report()
                 context['totals_list'] = totals_list
                 context['start_dttm'] = report_dict['start_dttm']
                 context['end_dttm'] = report_dict['end_dttm']
@@ -111,31 +143,31 @@ def view(request, file_uuid=None, pk=None):
 def email_totals_report():
     '''Emails leads a report of total malformed tickets by category and agent'''
     auth = (from_account, password)
-    to_address = list(Agent.objects.filter(is_lead=True).all()) if send_email else 'Sporter@spencertech.com'
-    context = get_report_data_context(30) #TODO Change days to form param
-    email_body = loader.render_to_string('tickets/view.html', context)
-    email_subject = "Ticket error report"
-    email = Emailer.O365Email(auth, "spenser.porter@gmail.com", email_subject, email_body)
+    to_address = list(Agent.objects.filter(is_lead=True).all().values_list('email', flat=True)) if send_email else 'Sporter@spencertech.com'
+    context = get_report_data_context() #TODO Change days to form param
+    email_body = loader.render_to_string('tickets/totals_email.html', context)
+    email_subject = "Ticket error report, all agents"
+    email = Emailer.O365Email(auth, to_address, email_subject, email_body)
     if send_email:
         email.send()
     else:
         email.send()
 
 def emailer(request):
-    if request.method == 'GET':
-        form = EmailerOptions()
-        context = {
-            'form': form
-        }
-        return render(request, 'tickets/emailer.html', context)
     if request.method == 'POST':
         form = EmailerOptions(request.POST)
         if form.is_valid():
             email_agents = form.cleaned_data['email_agents']
             email_leads = form.cleaned_data['email_leads']
+        if email_agents:
+            email_agents_reports()
         if email_leads:
-            body = email_totals_report()
-
+            email_totals_report()
+    form = EmailerOptions()
+    context = {
+        'form': form
+    }
+    return render(request, 'tickets/emailer.html', context)
 
 def get_filename_from_uuid(uuid):
     return "{}/{}.csv".format(settings.MEDIA_ROOT, uuid)
@@ -167,4 +199,3 @@ def upload(request):
     template = loader.get_template('tickets/upload.html')
     context = {}
     return HttpResponse(template.render(context, request))
-    #return render(request, 'tickets')

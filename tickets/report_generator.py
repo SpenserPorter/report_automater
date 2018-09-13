@@ -56,7 +56,7 @@ def build_agent_model(agent_name):
 def get_email_address(agent_name):
     '''Builds email address from First Last string using standard email
      format of first initial + last name @email_domain.com'''
-    first, last = agent_name.split(' ')
+    first, last = agent_name.replace("'",'').split(' ')
     email_components = [first[0], last, email_domain]
     return "".join(email_components)
 
@@ -68,7 +68,7 @@ def add_reports_dict_to_db(report_dict):
 
 def set_ticket_report_status(ticket, report_name):
     if report_name == 'All tickets':
-        return
+        ticket.clear_all_status()
     elif report_name == 'Request source incorrect':
         ticket.is_incorrect_request_source = True
     elif report_name == 'Severity missing':
@@ -99,23 +99,8 @@ def add_report_to_db(report, ticket_dict, report_pulled_dttm):
         if Ticket.objects.filter(id=ticket_id).exists():
             ticket = Ticket.objects.filter(id=ticket_id).get()
             if ticket.dttm_updated < report_pulled_dttm:
-                ticket.clear_all_status()
                 ticket.last_updated = report_pulled_dttm
         else:
             ticket = Ticket.create(ticket_id, agent, ticket_created_dttm, report_pulled_dttm)
         set_ticket_report_status(ticket, report_name)
         ticket.save()
-
-def email_agents_results(full_dict):
-    '''Emails agents a report of their malformed tickets'''
-    auth = (from_account, password)
-    for agent_name, reports in full_dict.items():
-        email_body, total = construct_email_body(reports)
-        email_subject = '{} tickets require action for {}'.format(total, date_range)
-        to_address = construct_email_address_from_name(agent_name)
-        email = emailer.O365Email(auth, to_address, email_subject, email_body)
-        if send_email:
-            email.send()
-        else:
-            if agent_name == 'Spenser Porter':
-                email.send()
