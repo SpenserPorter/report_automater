@@ -1,0 +1,28 @@
+{% extends "tickets/base.html" %}
+{% load static %}
+    {% block content %}
+    <head>
+        <h3>Step 1: Upload "Helpdesk_ActionDetail.csv" file to begin</h3>
+    </head>
+    <body>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="myfile">
+        <button type="submit">Upload</button>
+      </form>
+      {% if uploaded_file_uuid %}
+        <p><a>File uploaded succesfully! {{ uploaded_file_uuid }}</a></p>
+        <p>Click "Process Reports" to add/update ticket data</p>
+        <form action="{% url 'process_view' uploaded_file_uuid %}" method="post">
+            {% csrf_token %}
+              {{ form }}
+            <input type='submit' value='Process Reports'>
+        </form>
+      {% endif %}
+      {% if file_upload_error_message %}
+        <p>{{ file_upload_error_message }} </p>
+      {% endif %}
+   {% endblock %}
+
+    </body>
+</html>

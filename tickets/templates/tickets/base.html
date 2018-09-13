@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-2">
+            {% block sidebar %}
+            <ul class="sidebar-nav" id='nav'>
+                <li>{% block nav-home %}<a href="{% url 'index' %}">Home</a>{% endblock %}</li>
+                <li>{% block nav-upload %}<a href="{% url 'upload' %}">Upload new report</a>{% endblock %}</li>
+                <li>{% block nav-view_reports %}<a href="{% url 'view' %}">View Overall Stats</a> {% endblock %} </li>
+                <li>{% block nav-email_reports %}<a href="{% url 'emailer' %}">Report Emailer</a> {% endblock %} </li>
+                <li>{% block nav-about %}<a href="{% url 'about' %}">About</a>{% endblock %}</li>
+                <li>{% block nav-admin %}<a href="{% url 'admin:index' %}">Admin</a>{% endblock %}</li>
+            </ul>
+            {% endblock %}
+            </div>
+        <div class="col-sm-10 ">{% block content %}{% endblock %}</div>
+    </div>
+</body>
+</html>

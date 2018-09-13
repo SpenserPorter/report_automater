@@ -1,0 +1,60 @@
+<body>
+    <table style="border-collapse:collapse;" width="100%" align="center" border="1">
+        <caption>Ticket Details for {{agent.name}}</caption>
+        <thead>
+            <tr>
+                <th scope="col">
+                    Ticket ID
+                </th>
+                <th scope="col">
+                    Missing<br>Severity
+                </th>
+                <th scope="col">
+                    Missing<br>Closeout
+                </th>
+                <th scope="col">
+                    Request Src<br>Incorrect
+                </th>
+                <th scope="col">
+                    Request Date<br>Error
+                </th>
+                <th scope="col">
+                    Is Open
+                </th>
+                <th scope="col">
+                    Date Created
+                </th>
+                <th scope="col">
+                    Last Updated
+                </th>
+            </tr>
+        </thead>
+        {% for ticket in tickets %}
+        <tbody>
+            <tr>
+                <th scope="row">
+                    {{ticket.id}}
+                </td>
+                <td align="center">
+                    {% if ticket.is_missing_severity == True %}&#10004;{% else %} {% endif %}
+                </td>
+                <td align="center">
+                    {% if ticket.is_missing_closeout == True %}&#10004;{% else %} {% endif %}
+                </td>
+                <td align="center">
+                    {% if ticket.is_incorrect_request_source == True %}&#10004;{% else %} {% endif %}
+                </td align="center">
+                <td align="center">
+                    {% if ticket.is_negative_response_time == True %}-{% elif ticket.is_large_response_time == True %}+{% else %} {% endif %}
+                <td align="center">
+                    {% if ticket.is_open == True %}&#10004;{% else %} {% endif %}
+                </td>
+                <td>
+                    {{ticket.dttm_created}}
+                </td>
+                <td>
+                    {{ticket.dttm_updated}}
+                </td>
+            </tr>
+    {% endfor %}
+</body>

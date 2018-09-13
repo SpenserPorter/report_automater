@@ -1,0 +1,8 @@
+{% extends "tickets/base.html" %}
+{% load static %}
+{% block content %}
+<form action="{% url 'emailer' %}" method="post">
+    {% csrf_token %}
+      {{ form }}
+    <input type='submit' value='Send Emails'>
+{% endblock %}
