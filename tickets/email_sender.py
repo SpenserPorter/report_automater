@@ -21,9 +21,9 @@ class O365Email:
 
     def send(self):
         if self.msg.sendMessage():
-            print ("Succesfully sent email to {}".format(self.msg.json['ToRecipients'][0]['EmailAddress']['Address']))
+            return "Succesfully sent email to {}".format(self.msg.json['ToRecipients'][0]['EmailAddress']['Address'])
         else:
-            print("Failed to send email to {}".format(self.msg.json['ToRecipients'][0]['EmailAddress']['Address']))
+            return "Failed to send email to {}".format(self.msg.json['ToRecipients'][0]['EmailAddress']['Address'])
 
 class SmtpAuth:
 

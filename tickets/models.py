@@ -30,7 +30,7 @@ class Ticket(models.Model):
     def clear_all_status(self):
         self.is_missing_severity = False
         self.is_missing_closeout = False
-        self.is_incorrect_reqeust_source = False
+        self.is_incorrect_request_source = False
         self.is_open = False
         self.is_negative_response_time = False
         self.is_large_response_time = False

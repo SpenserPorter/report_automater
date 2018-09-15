@@ -24,9 +24,6 @@
                 <th scope="col">
                     Date Created
                 </th>
-                <th scope="col">
-                    Last Updated
-                </th>
             </tr>
         </thead>
         {% for ticket in tickets %}
@@ -51,9 +48,6 @@
                 </td>
                 <td>
                     {{ticket.dttm_created}}
-                </td>
-                <td>
-                    {{ticket.dttm_updated}}
                 </td>
             </tr>
     {% endfor %}

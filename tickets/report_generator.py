@@ -1,10 +1,16 @@
 from tickets import report_parser as rp
 import datetime as dt
+import pytz
 import yaml
 import os
 import pandas as pd
+from math import floor
 from .models import Agent, Ticket
 from django.db import transaction
+from django.db.models import Count, Q
+from django.template import loader
+
+from . import email_sender
 import pytz
 
 #Set config file path
@@ -46,9 +52,6 @@ def validate_csv_file(csv_file_path):
         'error': error_message
         }
 
-def get_report_dict(dataframe):
-    return rp.split_df_into_reports(dataframe, max_age_days)
-
 def build_agent_model(agent_name):
     email = get_email_address(agent_name)
     return Agent.create(agent_name, email)
@@ -67,6 +70,8 @@ def add_reports_dict_to_db(report_dict):
         add_report_to_db(report, ticket_dict, dttm_updated)
 
 def set_ticket_report_status(ticket, report_name):
+    '''Set ticket values based on report it's in'''
+
     if report_name == 'All tickets':
         ticket.clear_all_status()
     elif report_name == 'Request source incorrect':
@@ -85,6 +90,7 @@ def set_ticket_report_status(ticket, report_name):
 @transaction.atomic
 def add_report_to_db(report, ticket_dict, report_pulled_dttm):
     '''Add tickets to DB based on owner and report they show up in'''
+
     df = report.df
     report_name = report.name
     for index, row in df.iterrows():
@@ -104,3 +110,85 @@ def add_report_to_db(report, ticket_dict, report_pulled_dttm):
             ticket = Ticket.create(ticket_id, agent, ticket_created_dttm, report_pulled_dttm)
         set_ticket_report_status(ticket, report_name)
         ticket.save()
+
+def get_report_data_context(days=None):
+    totals_list = build_agent_report(days)
+    context = {
+        'totals_list': totals_list
+    }
+    return context
+
+def email_totals_report():
+    '''Emails leads a report of total malformed tickets by category and agent'''
+    auth = (from_account, password)
+    to_address = list(Agent.objects.filter(is_lead=True).all().values_list('email', flat=True)) if send_email else 'Sporter@spencertech.com'
+    context = get_report_data_context() #TODO Change days to form param
+    email_body = loader.render_to_string('tickets/totals_email.html', context)
+    email_subject = "Ticket error report, all agents"
+    email = email_sender.O365Email(auth, to_address, email_subject, email_body)
+    if send_email:
+        email.send()
+
+def get_all_tickets_with_errors(agents_tickets):
+    result = agents_tickets.filter(
+                    Q(is_missing_closeout=True) |
+                    Q(is_incorrect_request_source=True) |
+                    Q(is_missing_severity=True)
+                    )
+    return result
+
+def get_agents_with_nonzero_tickets():
+    return Agent.objects.annotate(ticket_count=Count('tickets')).filter(ticket_count__gt=0).all()
+
+def build_agent_report(days=None):
+    agents = get_agents_with_nonzero_tickets()
+    totals_list = []
+    for agent in agents:
+        dttm_now = timezone.localize(dt.datetime.now())
+        if days is not None:
+            agents_tickets = agent.tickets.filter(
+                                dttm_created__gt=(dttm_now - dt.timedelta(days=days))
+                                ).all()
+        else:
+            agents_tickets = agent.tickets.all()
+
+        total_tickets = agents_tickets.count()
+        total_open_tickets = agents_tickets.filter(is_open=True).count()
+        total_missing_sev = agents_tickets.filter(is_missing_severity=True).count()
+        total_incorrect_request_source = agents_tickets.filter(is_incorrect_request_source=True).count()
+        total_missing_closeout = agents_tickets.filter(is_missing_closeout=True).count()
+        total_with_errors = get_all_tickets_with_errors(agents_tickets).count()
+        error_percent = floor((total_with_errors / total_tickets) * 100) if total_tickets > 0 else 0
+        totals_list.append({
+            'agent': agent, 'total_open_tickets': total_open_tickets, 'total_missing_sev': total_missing_sev,
+            'total_incorrect_request_source':total_incorrect_request_source, 'total_missing_closeout': total_missing_closeout,
+            'total_with_errors': total_with_errors, 'total_tickets': total_tickets, 'error_percent': error_percent
+            }
+        )
+        sorted_totals = sorted(totals_list, key=lambda totals: totals['total_tickets'], reverse=True)
+    return sorted_totals
+
+def email_agents_reports():
+    '''Emails agents a report of their malformed tickets'''
+    auth = (from_account, password)
+    agents = get_agents_with_nonzero_tickets()
+    for agent in agents:
+        tickets = get_all_tickets_with_errors(agent.tickets.all())
+        total_tickets_with_errors = tickets.count()
+        if total_tickets_with_errors > 0:
+            context = {
+                'agent': agent,
+                'tickets': tickets,
+                }
+            email_body = loader.render_to_string('tickets/agent_emails.html', context)
+            email_subject = '{} tickets require action'.format(total_tickets_with_errors)
+        else:
+            email_body = "Good job!"
+            email_subject = "All your tickets are correct"
+        to_address = agent.email
+        email = email_sender.O365Email(auth, to_address, email_subject, email_body)
+        if send_email:
+            email.send()
+        else:
+            if agent.name == 'Spenser Porter':
+                email.send()

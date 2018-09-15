@@ -12,7 +12,7 @@ class ReportDataframe:
         self.df = dataframe
         self.name = name
 
-def split_df_into_reports(df_initial, max_age_days):
+def split_df_into_reports(df_initial):
     """Takes raw datafrome and splits into Report objects"""
 
     dttm_format = r'%m/%d/%Y %I:%M %p'
@@ -49,7 +49,8 @@ def split_df_into_reports(df_initial, max_age_days):
     report_dict['report_list'].append(ReportDataframe(
                                         dataframe=df.loc[
                                             (df['Close_Notes'].isnull()) &
-                                            (df['Request_Status'].isin(['Closed', 'Complete']))
+                                            (df['Request_Status'].isin(['Closed', 'Complete'])) &
+                                            (df['Model'] != 'Transition Meeting')
                                             ],
                                         name='Missing closeout'
                                         )

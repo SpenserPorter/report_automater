@@ -1,5 +1,1 @@
-email_domain: '@spencertech.com'
-lead_list: [Mfrade@spencertech.com, MBradley@spencertech.com, CAndrade@spencertech.com,
-  MYurrita@spencertech.com, Sporter@spencertech.com]
-max_age_days: 10
-send_email: false
+{email_domain: '@spencertech.com', local_timezone: US/Eastern, max_age_days: 10, send_email: false}
