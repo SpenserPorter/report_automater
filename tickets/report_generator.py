@@ -30,6 +30,7 @@ timezone = pytz.timezone(local_tz)
 from_account = os.getenv('REPORT_EMAIL_USERNAME')
 password = os.getenv('REPORT_EMAIL_PASSWORD')
 dttm_format = r'%m/%d/%Y %I:%M %p'
+send_email = True
 
 def validate_csv_file(csv_file_path):
     """Validates file is csv, and has the expected columns for Helpdesk_ActionDetail.csv report,
@@ -105,7 +106,7 @@ def add_report_to_db(report, ticket_dict, report_pulled_dttm):
         if Ticket.objects.filter(id=ticket_id).exists():
             ticket = Ticket.objects.filter(id=ticket_id).get()
             if ticket.dttm_updated < report_pulled_dttm:
-                ticket.last_updated = report_pulled_dttm
+                ticket.dttm_updated = report_pulled_dttm
         else:
             ticket = Ticket.create(ticket_id, agent, ticket_created_dttm, report_pulled_dttm)
         set_ticket_report_status(ticket, report_name)

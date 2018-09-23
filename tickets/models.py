@@ -12,9 +12,14 @@ class Agent(models.Model):
     def create(cls, name, email):
       return cls(name=name, email=email)
 
+class ReportTimeframe(models.Model):
+    start_dttm = models.DateTimeField()
+    end_dttm = models.DateTimeField()
+    
 class Ticket(models.Model):
     id = models.IntegerField(primary_key=True)
     owner = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='tickets')
+    timeframe = models.ForeignKey(ReportTimeframe, on_delete=models.CASCADE, related_name='tickets')
     dttm_created = models.DateTimeField()
     dttm_updated = models.DateTimeField()
     is_missing_severity = models.BooleanField(default=False)

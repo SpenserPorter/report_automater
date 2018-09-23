@@ -1,4 +1,5 @@
 <body>
+    Open this email in a browser to use the check boxes next to tickets.
     <table style="border-collapse:collapse;" width="100%" align="center" border="1">
         <caption>Ticket Details for {{agent.name}}</caption>
         <thead>
@@ -26,29 +27,36 @@
                 </th>
             </tr>
         </thead>
-        {% for ticket in tickets %}
         <tbody>
-            <tr>
-                <th scope="row">
-                    {{ticket.id}}
-                </td>
-                <td align="center">
-                    {% if ticket.is_missing_severity == True %}&#10004;{% else %} {% endif %}
-                </td>
-                <td align="center">
-                    {% if ticket.is_missing_closeout == True %}&#10004;{% else %} {% endif %}
-                </td>
-                <td align="center">
-                    {% if ticket.is_incorrect_request_source == True %}&#10004;{% else %} {% endif %}
-                </td align="center">
-                <td align="center">
-                    {% if ticket.is_negative_response_time == True %}-{% elif ticket.is_large_response_time == True %}+{% else %} {% endif %}
-                <td align="center">
-                    {% if ticket.is_open == True %}&#10004;{% else %} {% endif %}
-                </td>
-                <td>
-                    {{ticket.dttm_created}}
-                </td>
-            </tr>
-    {% endfor %}
+            {% for ticket in tickets %}
+                <tr>
+                    <th scope="row">
+                        <input type="checkbox"> {{ticket.id}}
+                    </td>
+                    <td align="center">
+                        {% if ticket.is_missing_severity == True %}&#10004;{% else %} {% endif %}
+                    </td>
+                    <td align="center">
+                        {% if ticket.is_missing_closeout == True %}&#10004;{% else %} {% endif %}
+                    </td>
+                    <td align="center">
+                        {% if ticket.is_incorrect_request_source == True %}&#10004;{% else %} {% endif %}
+                    </td align="center">
+                    <td align="center">
+                        {% if ticket.is_negative_response_time == True %}-{% elif ticket.is_large_response_time == True %}+{% else %} {% endif %}
+                    <td align="center">
+                        {% if ticket.is_open == True %}&#10004;{% else %} {% endif %}
+                    </td>
+                    <td>
+                        {{ticket.dttm_created}}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+</table>
+
+    <p>Check ALL actions on your tickets for both Severity AND Closeout notes!
+    <p>Request date errors:
+        <p>A + sign indicates your ticket was in process for over 3hrs. Verify this is intended and adjust accordingly
+        <p>A - sign indicates your in process time is negative (Adjust your request date/time to be before the ticket was opened!)<br>
 </body>

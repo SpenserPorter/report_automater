@@ -14,7 +14,7 @@
                         Missing<br>Severity
                     </th>
                     <th scope="col">
-                        Missing<br>Clouseouts
+                        Missing<br>Closeouts
                     </th>
                     <th scope="col">
                         Request Src<br>Incorrect
@@ -37,7 +37,7 @@
             <tbody>
                 <tr>
                     <th scope="row">
-                        {{ticket.id}}
+                        <input type="checkbox"> {{ticket.id}}
                     </td>
                     <td>
                         {% if ticket.is_missing_severity == True %}&#10004;{% else %} {% endif %}
